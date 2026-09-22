@@ -47,16 +47,17 @@ const names=["Hardest Subject","Hardest Subject","Practice / Problem Solving","S
 let data=load(), activeTab="today", tick=null, deferredInstall=null;
 
 function todayKey(){return new Date().toISOString().slice(0,10)}
-function freshDay(){
-  return {date:todayKey(),blocks:Array.from({length:8},(_,i)=>({subject:names[i],target:"",status:"idle",startedAt:null,pausedAt:null,remaining:null,completedAt:null,durationMin:data.settings.blockMin,reflection:""})),breakEnd:null};
+function freshDay(settings){
+  const mins=(settings&&settings.blockMin)||DEFAULTS.blockMin;
+  return {date:todayKey(),blocks:Array.from({length:8},(_,i)=>({subject:names[i],target:"",status:"idle",startedAt:null,pausedAt:null,remaining:null,completedAt:null,durationMin:mins,reflection:""})),breakEnd:null};
 }
 function load(){
   let x=null; try{x=JSON.parse(localStorage.getItem(KEY)||"null")}catch(e){}
   if(!x)x={settings:{...DEFAULTS},days:{},streak:0,lastComplete:null};
   x.settings={...DEFAULTS,...x.settings};
   const k=todayKey();
-  if(!x.days[k])x.days[k]=freshDay();
-  else if(x.days[k].date!==k)x.days[k]=freshDay();
+  if(!x.days[k])x.days[k]=freshDay(x.settings);
+  else if(x.days[k].date!==k)x.days[k]=freshDay(x.settings);
   return x;
 }
 function save(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}}
