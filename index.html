@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f5f5f2">
+<meta name="description" content="Offline 7x90 study system">
+<link rel="manifest" href="manifest.json">
+<title>7×90 Study</title>
+<style>
+:root{--bg:#f5f5f2;--card:#fff;--text:#171717;--muted:#666;--line:#ddd;--accent:#222;--soft:#ecece8;--ok:#2f6b42}
+*{box-sizing:border-box}html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}
+body{min-height:100vh;font-size:16px}.wrap{max-width:620px;margin:auto;padding:18px 14px 36px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+h1,h2,h3,p{margin:0}h1{font-size:25px}h2{font-size:21px}.muted{color:var(--muted);font-size:14px}
+button,input,textarea,select{font:inherit}button{border:0;border-radius:8px;padding:12px 14px;min-height:44px;cursor:pointer}
+.primary{background:var(--accent);color:#fff}.secondary{background:var(--soft);color:var(--text)}.danger{background:#eee0e0;color:#7a2222}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:18px}.tabs button{background:transparent;border:1px solid var(--line);padding:9px}
+.tabs button.active{background:var(--accent);color:#fff}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px;margin-bottom:10px}
+.progress{height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin:10px 0 15px}.progress i{display:block;height:100%;width:0;background:var(--accent)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.stack{display:flex;flex-direction:column;gap:8px}
+.block{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}.block.done{opacity:.65}.num{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.target{font-size:14px;color:var(--muted);margin-top:4px}
+input,textarea,select{width:100%;border:1px solid var(--line);border-radius:8px;padding:11px;background:#fff;color:var(--text)}textarea{min-height:90px;resize:vertical}
+label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px}.bigtime{font-size:64px;line-height:1;font-variant-numeric:tabular-nums;text-align:center;margin:25px 0 18px}.center{text-align:center}.actions{display:flex;gap:8px;flex-wrap:wrap}.actions>*{flex:1}.checklist label{display:flex;align-items:center;gap:9px;color:var(--text);font-size:14px;margin:0}.checklist input{width:18px;height:18px}
+.hidden{display:none!important}.success{color:var(--ok)}.spacer{height:8px}.smallbtn{padding:8px 10px;min-height:38px;font-size:13px}
+footer{margin-top:20px;text-align:center;color:var(--muted);font-size:12px}
+@media(max-width:380px){.wrap{padding:14px 10px}.bigtime{font-size:54px}.block{grid-template-columns:1fr}.block button{width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><div><h1>7×90 Study</h1><div class="muted" id="date"></div></div><button class="secondary smallbtn" id="installBtn" hidden>Install</button></header>
+<nav class="tabs">
+<button data-tab="today" class="active">Today</button><button data-tab="history">History</button><button data-tab="settings">Settings</button>
+</nav>
+<main id="app"></main>
+<footer>Offline • No account • No ads</footer>
+</div>
+<script>
+(function(){
+"use strict";
+const KEY="study7x90_v1";
+const DEFAULTS={blockMin:90,breakMin:20,core:7,theme:"light"};
+const ritual=["Sit at desk","Put phone away","Get water","Open required material","Write the exact output","Start the 90-minute block"];
+const names=["Hardest Subject","Hardest Subject","Practice / Problem Solving","Second Subject","Active Recall / Practice","Second Subject / Unfinished Work","Revision + Testing","Optional — Backlog / Weak Areas"];
+let data=load(), activeTab="today", tick=null, deferredInstall=null;
+
+function todayKey(){return new Date().toISOString().slice(0,10)}
+function freshDay(){
+  return {date:todayKey(),blocks:Array.from({length:8},(_,i)=>({subject:names[i],target:"",status:"idle",startedAt:null,pausedAt:null,remaining:null,completedAt:null,durationMin:data.settings.blockMin,reflection:""})),breakEnd:null};
+}
+function load(){
+  let x=null; try{x=JSON.parse(localStorage.getItem(KEY)||"null")}catch(e){}
+  if(!x)x={settings:{...DEFAULTS},days:{},streak:0,lastComplete:null};
+  x.settings={...DEFAULTS,...x.settings};
+  const k=todayKey();
+  if(!x.days[k])x.days[k]=freshDay();
+  else if(x.days[k].date!==k)x.days[k]=freshDay();
+  return x;
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}}
+function day(){return data.days[todayKey()]}
+function completedCore(){return day().blocks.slice(0,7).filter(b=>b.status==="done").length}
+function fmtDate(){
+ const d=new Date(); return d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric",year:"numeric"});
+}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function msRemaining(b){
+ if(b.status==="paused")return Math.max(0,(b.remaining||0)*1000);
+ if(b.status==="running")return Math.max(0,new Date(b.startedAt).getTime()+b.durationMin*60000-Date.now());
+ return 0;
+}
+function clock(ms){let s=Math.max(0,Math.floor(ms/1000)),m=Math.floor(s/60),z=s%60;return String(m).padStart(2,"0")+":"+String(z).padStart(2,"0")}
+function render(){
+ document.getElementById("date").textContent=fmtDate();
+ const app=document.getElementById("app");
+ if(activeTab==="today")renderToday(app);
+ if(activeTab==="history")renderHistory(app);
+ if(activeTab==="settings")renderSettings(app);
+ document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===activeTab));
+}
+function renderToday(app){
+ const d=day(), n=completedCore(), pct=Math.round(n/7*100);
+ if(d.blocks.some(b=>b.status==="running"||b.status==="paused")){renderSession(app);return}
+ if(d.blocks.some(b=>b.status==="complete_pending")){renderCompletion(app);return}
+ if(d.breakEnd){renderBreak(app);return}
+ let html='<section class="card"><div class="row"><div><div class="muted">TODAY</div><h2>'+n+' / 7 CORE BLOCKS</h2></div><strong>'+pct+'%</strong></div><div class="progress"><i style="width:'+pct+'%"></i></div><div class="muted">Goal: seven focused 90-minute blocks. Block 8 is bonus.</div></section>';
+ if(n===7){
+  html+='<section class="card center"><h2 class="success">7 / 7 COMPLETE ✓</h2><div class="spacer"></div><p>Today's study</p><p><b>630 focused minutes</b></p><div class="spacer"></div><button class="secondary" id="start8">START OPTIONAL BLOCK 8</button></section>';
+ } else {
+  html+='<section class="card"><div class="muted">CUE</div><h2>Start Ritual</h2><div class="checklist stack" style="margin-top:10px">'+ritual.map((x,i)=>'<label><input type="checkbox" data-rit="'+i+'"> '+x+'</label>').join("")+'</div></section>';
+ }
+ d.blocks.forEach((b,i)=>{
+  if(i===7&&n<7)return;
+  html+='<section class="card block '+(b.status==="done"?"done":"")+'"><div><div class="num">BLOCK '+(i+1)+(i===7?" • OPTIONAL":"")+'</div><h3>'+esc(b.subject||names[i])+'</h3><div class="target">'+(b.target?esc(b.target):"No target yet")+'</div><div class="muted" style="margin-top:5px">'+(b.status==="done"?"✓ Complete":"Not started")+'</div></div><button class="'+(b.status==="done"?"secondary":"primary")+' smallbtn" data-block="'+i+'">'+(b.status==="done"?"DONE":"SET UP")+'</button></section>';
+ });
+ app.innerHTML=html;
+ app.querySelectorAll("[data-block]").forEach(x=>x.onclick=()=>setupBlock(+x.dataset.block));
+ const s8=app.querySelector("#start8"); if(s8)s8.onclick=()=>setupBlock(7);
+}
+function setupBlock(i){
+ const b=day().blocks[i];
+ document.getElementById("app").innerHTML='<section class="card"><div class="muted">CRAVING • BLOCK '+(i+1)+'</div><h2>What are you going to accomplish?</h2><div class="spacer"></div><label>Subject</label><input id="sub" value="'+esc(b.subject||names[i])+'"><div class="spacer"></div><label>YOUR TARGET</label><textarea id="tar" placeholder="Example: Complete 25 mechanics questions">'+esc(b.target)+'</textarea><div class="spacer"></div><div class="actions"><button class="secondary" id="back">BACK</button><button class="primary" id="start">START '+data.settings.blockMin+' MIN</button></div></section>';
+ document.getElementById("back").onclick=render;
+ document.getElementById("start").onclick=()=>{
+  const sub=document.getElementById("sub").value.trim()||names[i], tar=document.getElementById("tar").value.trim();
+  if(!tar){document.getElementById("tar").focus();return}
+  Object.assign(b,{subject:sub,target:tar,status:"running",startedAt:new Date().toISOString(),pausedAt:null,remaining:null,durationMin:data.settings.blockMin});
+  save();render();
+ };
+}
+function renderSession(app){
+ const b=day().blocks.find(x=>x.status==="running"||x.status==="paused"), i=day().blocks.indexOf(b);
+ const rem=msRemaining(b);
+ if(b.status==="running"&&rem<=0){b.status="complete_pending";b.completedAt=new Date().toISOString();save();render();return}
+ app.innerHTML='<section class="card center"><div class="muted">ACTION • BLOCK '+(i+1)+'</div><div class="bigtime" id="timer">'+clock(rem)+'</div><h2>'+esc(b.subject)+'</h2><p class="target">'+esc(b.target)+'</p><div class="spacer"></div><div class="actions">'+(b.status==="running"?'<button class="secondary" id="pause">PAUSE</button>':'<button class="primary" id="resume">RESUME</button>')+'<button class="danger" id="end">END BLOCK</button></div></section>';
+ if(tick)clearInterval(tick);
+ tick=setInterval(()=>{
+  const x=day().blocks[i], r=msRemaining(x), el=document.getElementById("timer");
+  if(!el){clearInterval(tick);return}
+  el.textContent=clock(r);
+  if(r<=0){clearInterval(tick);x.status="complete_pending";x.completedAt=new Date().toISOString();save();render()}
+ },1000);
+ const p=app.querySelector("#pause"),r=app.querySelector("#resume"),e=app.querySelector("#end");
+ if(p)p.onclick=()=>{b.remaining=Math.ceil(msRemaining(b)/1000);b.status="paused";b.pausedAt=new Date().toISOString();save();render()};
+ if(r)r.onclick=()=>{b.status="running";b.startedAt=new Date(Date.now()-(b.durationMin*60000-(b.remaining||0)*1000)).toISOString();b.remaining=null;save();render()};
+ if(e)e.onclick=()=>{if(confirm("End this block without completing it?")){b.status="idle";b.startedAt=null;b.remaining=null;save();render()}};
+}
+function renderCompletion(app){
+ const b=day().blocks.find(x=>x.status==="complete_pending"),i=day().blocks.indexOf(b);
+ app.innerHTML='<section class="card"><div class="muted">REWARD • BLOCK '+(i+1)+'</div><h2 class="success">BLOCK COMPLETE ✓</h2><div class="spacer"></div><p>What did you accomplish?</p><div class="spacer"></div><textarea id="ref" placeholder="Completed 27 questions. Struggled with rotational motion.">'+esc(b.reflection)+'</textarea><div class="spacer"></div><button class="primary" id="saveRef">SAVE & TAKE BREAK</button></section>';
+ document.getElementById("saveRef").onclick=()=>{b.reflection=document.getElementById("ref").value.trim();b.status="done";save();if(completedCore()<7)showBreak();else render()};
+}
+function showBreak(){day().breakEnd=null;document.getElementById("app").innerHTML='<section class="card center"><h2>✓ BLOCK COMPLETE</h2><p class="muted">Take a break.</p><div class="spacer"></div><p><b>15–30 MIN BREAK</b></p><div class="actions"><button class="secondary" data-min="15">15 MIN</button><button class="secondary" data-min="20">20 MIN</button><button class="secondary" data-min="30">30 MIN</button><button class="primary" id="skip">SKIP BREAK</button></div></section>';document.querySelectorAll("[data-min]").forEach(x=>x.onclick=()=>{day().breakEnd=Date.now()+Number(x.dataset.min)*60000;save();render()});document.getElementById("skip").onclick=()=>{day().breakEnd=null;save();render()}}
+function renderBreak(app){const r=Math.max(0,day().breakEnd-Date.now());if(r<=0){day().breakEnd=null;save();render();return}app.innerHTML='<section class="card center"><div class="muted">BREAK</div><div class="bigtime" id="bt">'+clock(r)+'</div><p>Next: Block '+(completedCore()+1)+'</p><div class="spacer"></div><button class="secondary" id="skip">SKIP BREAK</button></section>';if(tick)clearInterval(tick);tick=setInterval(()=>{const x=Math.max(0,day().breakEnd-Date.now()),el=document.getElementById("bt");if(!el){clearInterval(tick);return}el.textContent=clock(x);if(x<=0){clearInterval(tick);day().breakEnd=null;save();render()}},1000);document.getElementById("skip").onclick=()=>{day().breakEnd=null;save();render()}}
+function renderHistory(app){
+ const rows=Object.keys(data.days).sort().reverse().map(k=>{const d=data.days[k],n=d.blocks.slice(0,7).filter(b=>b.status==="done").length,mins=d.blocks.slice(0,7).filter(b=>b.status==="done").reduce((a,b)=>a+(b.durationMin||data.settings.blockMin),0);return '<section class="card"><div class="row"><b>'+k+'</b><b>'+n+' / 7</b></div><div class="muted">'+mins+' focused minutes</div></section>'}).join("");
+ app.innerHTML='<section><h2 style="margin-bottom:10px">History</h2>'+(rows||'<div class="card muted">No history yet.</div>')+'</section>';
+}
+function renderSettings(app){
+ app.innerHTML='<section class="card"><h2>Settings</h2><div class="spacer"></div><label>Block duration (minutes)</label><input id="dur" type="number" min="1" max="240" value="'+data.settings.blockMin+'"><div class="spacer"></div><label>Default break (minutes)</label><input id="br" type="number" min="0" max="60" value="'+data.settings.breakMin+'"><div class="spacer"></div><label>Core blocks</label><input value="7" disabled><div class="spacer"></div><button class="primary" id="saveSet">SAVE SETTINGS</button></section><section class="card"><h2>Reset</h2><p class="muted">Erase all local study data.</p><div class="spacer"></div><button class="danger" id="reset">RESET ALL DATA</button></section><section class="card"><h2>About</h2><p class="muted">7×90 Study — tiny, offline, distraction-free.</p></section>';
+ document.getElementById("saveSet").onclick=()=>{data.settings.blockMin=Math.max(1,Math.min(240,parseInt(document.getElementById("dur").value)||90));data.settings.breakMin=Math.max(0,Math.min(60,parseInt(document.getElementById("br").value)||20));save();render()};
+ document.getElementById("reset").onclick=()=>{if(confirm("Erase all study history and settings?")){localStorage.removeItem(KEY);location.reload()}};
+}
+document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{activeTab=b.dataset.tab;render()});
+window.addEventListener("focus",()=>{data=load();render()});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden){data=load();render()}});
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstall=e;document.getElementById("installBtn").hidden=false});
+document.getElementById("installBtn").onclick=async()=>{if(deferredInstall){deferredInstall.prompt();deferredInstall=null}};
+if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+render();
+})();
+</script>
+</body>
+</html>
