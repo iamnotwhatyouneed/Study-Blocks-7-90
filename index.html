@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#FAFAF7">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="7×90">
+<link rel="manifest" href="manifest.json">
+<title>7×90 Study Blocks</title>
+<style>
+  :root {
+    --paper: #FAFAF7;
+    --ink: #1A1A18;
+    --grey: #8B8578;
+    --grey-light: #D8D4C8;
+    --moss: #4A5D45;
+    --moss-light: #E4E8E1;
+    --danger: #8B4A3F;
+    --radius: 2px;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.45;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: contain;
+  }
+  .mono {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  }
+  #app {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 20px 12px;
+  }
+
+  /* ---- Top nav ---- */
+  nav.tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--grey-light);
+    margin-bottom: 24px;
+    flex-shrink: 0;
+  }
+  nav.tabs button {
+    flex: 1;
+    background: none;
+    border: none;
+    font-size: 14px;
+    padding: 10px 4px 12px;
+    color: var(--grey);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    font-family: inherit;
+  }
+  nav.tabs button.active {
+    color: var(--ink);
+    border-bottom-color: var(--ink);
+    font-weight: 600;
+  }
+
+  main { flex: 1; min-height: 0; }
+
+  h1 {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--grey);
+    margin: 0 0 2px;
+  }
+  .count-line {
+    font-size: 28px;
+    font-weight: 600;
+    margin: 0 0 14px;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+  }
+  .count-line .of { color: var(--grey); font-weight: 400; }
+
+  .barwrap {
+    margin-bottom: 22px;
+  }
+  .bar {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+    font-size: 20px;
+    letter-spacing: 1px;
+    color: var(--moss);
+    word-break: break-all;
+    line-height: 1.2;
+  }
+  .bar .empty { color: var(--grey-light); }
+
+  /* ---- Block list ---- */
+  .block {
+    border: 1px solid var(--grey-light);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: var(--paper);
+    cursor: pointer;
+    font-family: inherit;
+    color: inherit;
+  }
+  .block.done {
+    background: var(--moss-light);
+    border-color: var(--moss);
+  }
+  .block.optional {
+    border-style: dashed;
+  }
+  .block-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 3px;
+  }
+  .block-num {
+    font-size: 12px;
+    color: var(--grey);
+    letter-spacing: 0.02em;
+  }
+  .block-status {
+    font-size: 12px;
+    color: var(--grey);
+  }
+  .block-status.done { color: var(--moss); font-weight: 600; }
+  .block-subject {
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .block-target {
+    font-size: 14px;
+    color: var(--grey);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .block8-label {
+    font-size: 12px;
+    color: var(--grey);
+    margin: 18px 0 8px;
+  }
+
+  /* ---- Buttons ---- */
+  button { touch-action: manipulation; }
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: var(--radius);
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+    cursor: pointer;
+    font-family: inherit;
+    margin-bottom: 10px;
+  }
+  .btn:active { opacity: 0.75; }
+  .btn.secondary {
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .btn.ghost {
+    background: none;
+    border-color: var(--grey-light);
+    color: var(--grey);
+    font-weight: 400;
+  }
+  .btn.danger {
+    background: var(--paper);
+    color: var(--danger);
+    border-color: var(--danger);
+  }
+  .btn-row { display: flex; gap: 10px; }
+  .btn-row .btn { margin-bottom: 0; }
+
+  /* ---- Forms ---- */
+  label {
+    display: block;
+    font-size: 13px;
+    color: var(--grey);
+    margin-bottom: 6px;
+    margin-top: 16px;
+  }
+  label:first-of-type { margin-top: 0; }
+  input[type=text], textarea {
+    width: 100%;
+    border: 1px solid var(--grey-light);
+    border-radius: var(--radius);
+    padding: 12px;
+    font-size: 16px;
+    font-family: inherit;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  input[type=text]:focus, textarea:focus {
+    outline: none;
+    border-color: var(--ink);
+  }
+  textarea { resize: vertical; min-height: 64px; }
+
+  /* ---- Screen header ---- */
+  .screen-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .back {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: var(--ink);
+    cursor: pointer;
+    padding: 4px 8px 4px 0;
+    line-height: 1;
+  }
+  .screen-title {
+    font-size: 15px;
+    color: var(--grey);
+  }
+
+  /* ---- Target display (craving) ---- */
+  .target-label {
+    font-size: 13px;
+    color: var(--grey);
+    margin-bottom: 6px;
+  }
+  .target-text {
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.35;
+    margin-bottom: 28px;
+    padding-left: 14px;
+    border-left: 3px solid var(--moss);
+  }
+  .subject-tag {
+    font-size: 13px;
+    color: var(--grey);
+    margin-bottom: 6px;
+  }
+
+  /* ---- Timer screen ---- */
+  .timer-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding-top: 30px;
+  }
+  .timer-num {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+    font-size: 68px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 6px 0 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .timer-num.paused { color: var(--grey); }
+  .timer-state {
+    font-size: 13px;
+    color: var(--grey);
+    letter-spacing: 0.04em;
+    margin-bottom: 34px;
+  }
+  .timer-subject {
+    font-size: 15px;
+    color: var(--grey);
+    margin-bottom: 4px;
+  }
+  .timer-target {
+    font-size: 19px;
+    font-weight: 600;
+    margin-bottom: 36px;
+    max-width: 100%;
+  }
+  .timer-btns {
+    width: 100%;
+    margin-top: auto;
+  }
+
+  /* ---- Checklist (ritual) ---- */
+  .ritual-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--grey-light);
+    font-size: 15px;
+  }
+  .ritual-item:last-child { border-bottom: none; }
+  .ritual-check {
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--grey);
+    border-radius: var(--radius);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: var(--moss);
+  }
+  .ritual-check.on { background: var(--moss-light); border-color: var(--moss); }
+  .ritual-row { cursor: pointer; }
+
+  /* ---- Break screen ---- */
+  .break-choices {
+    display: flex;
+    gap: 8px;
+    margin: 18px 0 20px;
+  }
+  .break-choices .btn { flex: 1; margin-bottom: 0; padding: 14px 4px; }
+
+  /* ---- History ---- */
+  .hist-entry {
+    border-bottom: 1px solid var(--grey-light);
+    padding: 12px 0;
+  }
+  .hist-entry:first-child { padding-top: 0; }
+  .hist-date {
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 3px;
+  }
+  .hist-stats {
+    font-size: 13px;
+    color: var(--grey);
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+  }
+  .empty-state {
+    color: var(--grey);
+    font-size: 14px;
+    padding: 30px 0;
+    text-align: center;
+  }
+  .streak-line {
+    font-size: 14px;
+    color: var(--moss);
+    margin-bottom: 18px;
+    font-weight: 600;
+  }
+
+  /* ---- Settings ---- */
+  .setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--grey-light);
+  }
+  .setting-label { font-size: 15px; }
+  .setting-sub { font-size: 12px; color: var(--grey); margin-top: 2px; }
+  .stepper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .stepper button {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius);
+    border: 1px solid var(--grey-light);
+    background: var(--paper);
+    font-size: 18px;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .stepper .val {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+    font-size: 15px;
+    min-width: 44px;
+    text-align: center;
+  }
+  select {
+    font-family: inherit;
+    font-size: 15px;
+    padding: 6px 8px;
+    border-radius: var(--radius);
+    border: 1px solid var(--grey-light);
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  /* ---- Welcome ---- */
+  .welcome {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: left;
+  }
+  .welcome h2 {
+    font-size: 26px;
+    font-weight: 600;
+    line-height: 1.3;
+    margin-bottom: 40px;
+  }
+
+  .footnote {
+    font-size: 12px;
+    color: var(--grey);
+    margin-top: 6px;
+    text-align: center;
+  }
+
+  .hidden { display: none !important; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <nav class="tabs" id="tabs">
+    <button data-tab="today" class="active">Today</button>
+    <button data-tab="history">History</button>
+    <button data-tab="settings">Settings</button>
+  </nav>
+  <main id="main"></main>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   STORAGE KEYS & DEFAULTS
+   ============================================================ */
+var LS_KEY = "s790_state_v1";
+
+var DEFAULT_SUBJECTS = [
+  "Hardest Subject",
+  "Hardest Subject",
+  "Practice / Problem Solving",
+  "Second Subject",
+  "Active Recall / Practice",
+  "Second Subject / Unfinished Work",
+  "Revision + Testing"
+];
+
+var RITUAL_STEPS = [
+  "Sit at desk",
+  "Put phone away",
+  "Get water",
+  "Open required material",
+  "Write the exact output"
+];
+
+function todayStr(d) {
+  d = d || new Date();
+  var y = d.getFullYear();
+  var m = String(d.getMonth()+1).padStart(2,"0");
+  var day = String(d.getDate()).padStart(2,"0");
+  return y+"-"+m+"-"+day;
+}
+
+function freshDay(dateStr) {
+  var blocks = [];
+  for (var i=0;i<7;i++){
+    blocks.push({ status:"pending", target:"", startedAt:null, endsAt:null, pausedRemaining:null, completedAt:null, durationMin:null, reflection:"" });
+  }
+  blocks.push({ status:"pending", target:"", startedAt:null, endsAt:null, pausedRemaining:null, completedAt:null, durationMin:null, reflection:"", optional:true });
+  return { date: dateStr, blocks: blocks };
+}
+
+function defaultState() {
+  return {
+    subjects: DEFAULT_SUBJECTS.slice(),
+    settings: { blockDuration: 90, breakDefault: 20, coreBlocks: 7, allowBlock8: true, theme: "light" },
+    today: freshDay(todayStr()),
+    history: [], // { date, coreDone, totalMinutes }
+    streak: 0,
+    onboarded: false,
+    ritualChecked: []
+  };
+}
+
+function loadState() {
+  try {
+    var raw = localStorage.getItem(LS_KEY);
+    if (!raw) return defaultState();
+    var parsed = JSON.parse(raw);
+    if (!parsed || !parsed.today || !parsed.settings) return defaultState();
+    // fill any missing fields from a newer default shape
+    var d = defaultState();
+    for (var k in d) if (!(k in parsed)) parsed[k] = d[k];
+    for (var sk in d.settings) if (!(sk in parsed.settings)) parsed.settings[sk] = d.settings[sk];
+    return parsed;
+  } catch(e) {
+    return defaultState();
+  }
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+  } catch(e) {
+    // storage full or unavailable - fail silently, don't crash the app
+    console.warn("save failed", e);
+  }
+}
+
+var state = loadState();
+
+/* ============================================================
+   DAILY ROLLOVER
+   ============================================================ */
+function rolloverIfNeeded() {
+  var t = todayStr();
+  if (state.today.date === t) return;
+
+  // close out the previous day into history (only if it had any activity)
+  var prev = state.today;
+  var coreDone = prev.blocks.slice(0,7).filter(function(b){return b.status==="done";}).length;
+  var totalMin = prev.blocks.reduce(function(sum,b){ return sum + (b.durationMin||0); }, 0);
+  var hadActivity = prev.blocks.some(function(b){ return b.status==="done" || b.status==="active" || b.status==="paused"; });
+
+  if (hadActivity) {
+    // if a block was mid-timer when the day flipped, mark it incomplete but keep any elapsed time already banked
+    state.history.unshift({ date: prev.date, coreDone: coreDone, totalMinutes: totalMin });
+    if (state.history.length > 365) state.history = state.history.slice(0,365);
+
+    // streak: consecutive days (by calendar) with all core blocks done
+    if (coreDone >= state.settings.coreBlocks) {
+      state.streak = (state.streak||0) + 1;
+    } else {
+      state.streak = 0;
+    }
+  }
+
+  state.today = freshDay(t);
+  state.ritualChecked = [];
+  saveState();
+}
+
+/* ============================================================
+   ROUTER
+   ============================================================ */
+var route = { screen: "today", blockIndex: null };
+// screens: today, setup, ritual, timer, complete, break, history, settings, welcome
+
+function nav(screen, blockIndex) {
+  route = { screen: screen, blockIndex: (blockIndex===undefined?null:blockIndex) };
+  render();
+}
+
+function setTab(tab) {
+  nav(tab === "today" ? "today" : tab);
+}
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function fmtClock(totalSeconds) {
+  if (totalSeconds < 0) totalSeconds = 0;
+  var m = Math.floor(totalSeconds/60);
+  var s = Math.floor(totalSeconds%60);
+  return String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+}
+
+function fmtDateHuman(dateStr) {
+  var parts = dateStr.split("-");
+  var d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+  return d.toLocaleDateString(undefined, { month:"long", day:"numeric" });
+}
+
+function el(tag, attrs, children) {
+  var e = document.createElement(tag);
+  attrs = attrs || {};
+  for (var k in attrs) {
+    if (k === "class") e.className = attrs[k];
+    else if (k === "text") e.textContent = attrs[k];
+    else if (k.indexOf("on")===0 && typeof attrs[k]==="function") e.addEventListener(k.slice(2), attrs[k]);
+    else e.setAttribute(k, attrs[k]);
+  }
+  (children||[]).forEach(function(c){
+    if (c==null) return;
+    if (typeof c === "string") e.appendChild(document.createTextNode(c));
+    else e.appendChild(c);
+  });
+  return e;
+}
+
+function progressBar(done, total, width) {
+  width = width || total;
+  var filled = Math.round((done/total)*width);
+  var empty = width - filled;
+  var span = el("span", {class:"bar"});
+  span.appendChild(document.createTextNode("█".repeat(filled)));
+  var e2 = el("span",{class:"empty",text:"░".repeat(empty)});
+  span.appendChild(e2);
+  span.appendChild(document.createTextNode(" "+done+" / "+total));
+  return span;
+}
+
+/* ============================================================
+   TIMER TICK (lightweight - 1x per second only while a timer screen is visible)
+   ============================================================ */
+var tickHandle = null;
+function startTicking() {
+  stopTicking();
+  tickHandle = setInterval(function(){
+    if (route.screen === "timer") renderTimerNumbers();
+  }, 1000);
+}
+function stopTicking() {
+  if (tickHandle) { clearInterval(tickHandle); tickHandle = null; }
+}
+document.addEventListener("visibilitychange", function(){
+  if (document.visibilityState === "visible") {
+    rolloverIfNeeded();
+    render();
+  }
+});
+
+/* ============================================================
+   RENDER: SCREENS
+   ============================================================ */
+var mainEl = document.getElementById("main");
+var tabsEl = document.getElementById("tabs");
+
+function render() {
+  rolloverIfNeeded();
+  mainEl.innerHTML = "";
+  tabsEl.classList.toggle("hidden", !state.onboarded || ["setup","ritual","timer","complete","break"].indexOf(route.screen) !== -1);
+
+  Array.from(tabsEl.children).forEach(function(b){
+    var tab = b.getAttribute("data-tab");
+    var activeTab = route.screen === "today" ? "today" : route.screen;
+    b.classList.toggle("active", tab === activeTab);
+  });
+
+  if (!state.onboarded && route.screen !== "welcome") { route.screen = "welcome"; }
+
+  switch(route.screen) {
+    case "welcome": renderWelcome(); break;
+    case "today": renderToday(); break;
+    case "setup": renderSetup(); break;
+    case "ritual": renderRitual(); break;
+    case "timer": renderTimer(); break;
+    case "complete": renderComplete(); break;
+    case "break": renderBreak(); break;
+    case "history": renderHistory(); break;
+    case "settings": renderSettings(); break;
+    default: renderToday();
+  }
+
+  if (route.screen === "timer") startTicking(); else stopTicking();
+}
+
+function renderWelcome() {
+  var wrap = el("div", {class:"welcome"});
+  wrap.appendChild(el("h2", {text:"Build your day one focused block at a time."}));
+  wrap.appendChild(el("button", {class:"btn", text:"Start", onclick:function(){
+    state.onboarded = true; saveState(); nav("today");
+  }}));
+  mainEl.appendChild(wrap);
+}
+
+function coreDoneCount() {
+  return state.today.blocks.slice(0, state.settings.coreBlocks).filter(function(b){return b.status==="done";}).length;
+}
+
+function renderToday() {
+  var core = state.settings.coreBlocks;
+  var done = coreDoneCount();
+
+  mainEl.appendChild(el("h1", {text:"TODAY"}));
+  var line = el("div", {class:"count-line"});
+  line.appendChild(document.createTextNode(done+" "));
+  line.appendChild(el("span",{class:"of",text:"/ "+core+" CORE BLOCKS"}));
+  mainEl.appendChild(line);
+
+  var barwrap = el("div", {class:"barwrap"});
+  barwrap.appendChild(progressBar(done, core, core));
+  mainEl.appendChild(barwrap);
+
+  // core blocks
+  state.today.blocks.slice(0, core).forEach(function(b, i){
+    mainEl.appendChild(renderBlockCard(b, i));
+  });
+
+  // block 8
+  if (state.settings.allowBlock8 && state.today.blocks[7]) {
+    mainEl.appendChild(el("div", {class:"block8-label", text: done >= core ? "OPTIONAL — BACKLOG / WEAK AREAS" : "BLOCK 8 · unlocks after core blocks"}));
+    var b8 = state.today.blocks[7];
+    var locked = done < core && b8.status === "pending";
+    var card = renderBlockCard(b8, 7, locked);
+    mainEl.appendChild(card);
+  }
+
+  // end of day summary
+  if (done >= core) {
+    var totalMin = state.today.blocks.slice(0,core).reduce(function(s,b){return s+(b.durationMin||0);},0);
+    var summary = el("div", {style:"margin-top:18px;padding-top:14px;border-top:1px solid var(--grey-light);"});
+    summary.appendChild(el("div", {style:"font-size:15px;font-weight:600;margin-bottom:6px;", text: core+" / "+core+" COMPLETE ✓"}));
+    summary.appendChild(el("div", {class:"mono", style:"font-size:13px;color:var(--grey);", text:"Total focused study: "+totalMin+" minutes"}));
+    mainEl.appendChild(summary);
+  }
+}
+
+function renderBlockCard(b, index, locked) {
+  var isDone = b.status === "done";
+  var isActive = b.status === "active" || b.status === "paused";
+  var subjectName = b.optional ? "Backlog / Weak Areas" : state.subjects[index];
+
+  var card = el("button", {
+    class: "block" + (isDone?" done":"") + (b.optional?" optional":""),
+    onclick: locked ? null : function(){ openBlock(index); }
+  });
+  if (locked) { card.style.opacity = "0.45"; card.disabled = true; }
+
+  var top = el("div", {class:"block-top"});
+  top.appendChild(el("span", {class:"block-num", text: "BLOCK "+(index+1)}));
+  var statusText = isDone ? "✓ Complete" : isActive ? (b.status==="paused"?"Paused":"In progress") : locked ? "Locked" : "Not started";
+  top.appendChild(el("span", {class:"block-status"+(isDone?" done":""), text: statusText}));
+  card.appendChild(top);
+
+  card.appendChild(el("div", {class:"block-subject", text: subjectName}));
+  if (b.target) {
+    card.appendChild(el("div", {class:"block-target", text: b.target}));
+  } else if (!locked) {
+    card.appendChild(el("div", {class:"block-target", text: "Tap to define today's output"}));
+  }
+  return card;
+}
+
+var draftTarget = "";
+var draftSubject = "";
+
+function openBlock(index) {
+  var b = state.today.blocks[index];
+  if (b.status === "active" || b.status === "paused") {
+    route = { screen: "timer", blockIndex: index };
+    render();
+    return;
+  }
+  if (b.status === "done") {
+    // allow reviewing? keep simple - just show today with a tap-to-noop; do nothing destructive
+    return;
+  }
+  draftTarget = b.target || "";
+  draftSubject = b.optional ? "Backlog / Weak Areas" : state.subjects[index];
+  route = { screen: "setup", blockIndex: index };
+  render();
+}
+
+function renderSetup() {
+  var idx = route.blockIndex;
+  var b = state.today.blocks[idx];
+
+  var head = el("div", {class:"screen-head"});
+  head.appendChild(el("button", {class:"back", text:"‹", onclick:function(){ nav("today"); }}));
+  head.appendChild(el("span", {class:"screen-title", text:"BLOCK "+(idx+1)}));
+  mainEl.appendChild(head);
+
+  mainEl.appendChild(el("div", {style:"font-size:19px;font-weight:600;margin-bottom:18px;", text:"What are you going to accomplish?"}));
+
+  if (!b.optional) {
+    mainEl.appendChild(el("label", {text:"Subject"}));
+    var subjInput = el("input", {type:"text", value: draftSubject});
+    subjInput.value = draftSubject;
+    subjInput.addEventListener("input", function(e){ draftSubject = e.target.value; });
+    mainEl.appendChild(subjInput);
+  }
+
+  mainEl.appendChild(el("label", {text:"Today's output"}));
+  var targetInput = el("textarea", {placeholder:"Complete 25 physics questions"});
+  targetInput.value = draftTarget;
+  targetInput.addEventListener("input", function(e){ draftTarget = e.target.value; });
+  mainEl.appendChild(targetInput);
+
+  var startBtn = el("button", {class:"btn", text:"Start Ritual", style:"margin-top:24px;", onclick:function(){
+    if (!draftTarget.trim()) { targetInput.focus(); targetInput.style.borderColor = "var(--danger)"; return; }
+    b.target = draftTarget.trim();
+    if (!b.optional) state.subjects[idx] = draftSubject.trim() || state.subjects[idx];
+    saveState();
+    nav("ritual", idx);
+  }});
+  mainEl.appendChild(startBtn);
+
+  var skipRitual = el("button", {class:"btn ghost", text:"Skip ritual, start now", onclick:function(){
+    if (!draftTarget.trim()) { targetInput.focus(); targetInput.style.borderColor = "var(--danger)"; return; }
+    b.target = draftTarget.trim();
+    if (!b.optional) state.subjects[idx] = draftSubject.trim() || state.subjects[idx];
+    saveState();
+    beginTimer(idx);
+  }});
+  mainEl.appendChild(skipRitual);
+}
+
+function renderRitual() {
+  var idx = route.blockIndex;
+  var head = el("div", {class:"screen-head"});
+  head.appendChild(el("button", {class:"back", text:"‹", onclick:function(){ nav("setup", idx); }}));
+  head.appendChild(el("span", {class:"screen-title", text:"START RITUAL"}));
+  mainEl.appendChild(head);
+
+  var list = el("div", {style:"margin-bottom:26px;"});
+  RITUAL_STEPS.forEach(function(step, i){
+    var checked = state.ritualChecked.indexOf(i) !== -1;
+    var row = el("div", {class:"ritual-item ritual-row", onclick:function(){
+      var pos = state.ritualChecked.indexOf(i);
+      if (pos===-1) state.ritualChecked.push(i); else state.ritualChecked.splice(pos,1);
+      saveState();
+      render();
+    }});
+    row.appendChild(el("div", {class:"ritual-check"+(checked?" on":""), text: checked?"✓":""}));
+    row.appendChild(el("div", {text: step}));
+    list.appendChild(row);
+  });
+  mainEl.appendChild(list);
+
+  mainEl.appendChild(el("button", {class:"btn", text:"Start "+state.settings.blockDuration+" Min", onclick:function(){
+    beginTimer(idx);
+  }}));
+}
+
+function beginTimer(idx) {
+  var b = state.today.blocks[idx];
+  var now = Date.now();
+  var durMs = state.settings.blockDuration * 60 * 1000;
+  b.status = "active";
+  b.startedAt = now;
+  b.endsAt = now + durMs;
+  b.pausedRemaining = null;
+  saveState();
+  nav("timer", idx);
+}
+
+function remainingMs(b) {
+  if (b.status === "paused") return b.pausedRemaining;
+  return Math.max(0, b.endsAt - Date.now());
+}
+
+function renderTimer() {
+  var idx = route.blockIndex;
+  var b = state.today.blocks[idx];
+  if (!b || (b.status!=="active" && b.status!=="paused")) { nav("today"); return; }
+
+  var subjectName = b.optional ? "Backlog / Weak Areas" : state.subjects[idx];
+
+  var wrap = el("div", {class:"timer-screen"});
+  var numEl = el("div", {class:"timer-num mono", id:"timerNum"});
+  wrap.appendChild(numEl);
+  wrap.appendChild(el("div", {class:"timer-state", id:"timerState"}));
+  wrap.appendChild(el("div", {class:"timer-subject", text: subjectName}));
+  wrap.appendChild(el("div", {class:"timer-target", text: b.target || ""}));
+
+  var btnWrap = el("div", {class:"timer-btns"});
+  if (b.status === "active") {
+    var row = el("div", {class:"btn-row"});
+    row.appendChild(el("button", {class:"btn secondary", text:"Pause", onclick:function(){ pauseBlock(idx); }}));
+    row.appendChild(el("button", {class:"btn danger", text:"End Block", onclick:function(){ confirmEndEarly(idx); }}));
+    btnWrap.appendChild(row);
+  } else {
+    var row2 = el("div", {class:"btn-row"});
+    row2.appendChild(el("button", {class:"btn secondary", text:"Resume", onclick:function(){ resumeBlock(idx); }}));
+    row2.appendChild(el("button", {class:"btn danger", text:"End Block", onclick:function(){ confirmEndEarly(idx); }}));
+    btnWrap.appendChild(row2);
+  }
+  wrap.appendChild(btnWrap);
+  mainEl.appendChild(wrap);
+
+  renderTimerNumbers();
+}
+
+function renderTimerNumbers() {
+  var idx = route.blockIndex;
+  var b = state.today.blocks[idx];
+  if (!b) return;
+  var numEl = document.getElementById("timerNum");
+  var stateEl = document.getElementById("timerState");
+  if (!numEl) return;
+
+  var rem = remainingMs(b);
+  numEl.textContent = fmtClock(rem/1000);
+  numEl.classList.toggle("paused", b.status==="paused");
+  if (stateEl) stateEl.textContent = b.status === "paused" ? "PAUSED" : "";
+
+  if (b.status === "active" && rem <= 0) {
+    finishBlock(idx);
+  }
+}
+
+function pauseBlock(idx) {
+  var b = state.today.blocks[idx];
+  b.pausedRemaining = Math.max(0, b.endsAt - Date.now());
+  b.status = "paused";
+  saveState();
+  render();
+}
+
+function resumeBlock(idx) {
+  var b = state.today.blocks[idx];
+  b.endsAt = Date.now() + b.pausedRemaining;
+  b.status = "active";
+  b.pausedRemaining = null;
+  saveState();
+  render();
+}
+
+function confirmEndEarly(idx) {
+  if (confirm("End this block now? Time studied so far will still be recorded.")) {
+    finishBlock(idx, true);
+  }
+}
+
+function finishBlock(idx, early) {
+  var b = state.today.blocks[idx];
+  var elapsedMs = Date.now() - b.startedAt;
+  // if paused, elapsed should exclude nothing extra since we track via endsAt already
+  var plannedMs = state.settings.blockDuration*60*1000;
+  var actualMs = early ? Math.min(elapsedMs, plannedMs) : plannedMs;
+  b.durationMin = Math.round(actualMs/60000);
+  b.status = "done";
+  b.completedAt = Date.now();
+  saveState();
+  draftReflection = "";
+  nav("complete", idx);
+}
+
+var draftReflection = "";
+function renderComplete() {
+  var idx = route.blockIndex;
+  var b = state.today.blocks[idx];
+
+  mainEl.appendChild(el("div", {style:"font-size:22px;font-weight:600;margin-bottom:4px;", text:"BLOCK COMPLETE ✓"}));
+  mainEl.appendChild(el("div", {class:"mono", style:"font-size:13px;color:var(--grey);margin-bottom:24px;", text: b.durationMin+" minutes focused"}));
+
+  mainEl.appendChild(el("label", {text:"What did you accomplish?"}));
+  var ta = el("textarea", {placeholder:"Completed 27 questions. Struggled with rotational motion."});
+  ta.addEventListener("input", function(e){ draftReflection = e.target.value; });
+  mainEl.appendChild(ta);
+
+  mainEl.appendChild(el("button", {class:"btn", text:"Save & Take Break", style:"margin-top:22px;", onclick:function(){
+    b.reflection = draftReflection.trim();
+    saveState();
+    nav("break", idx);
+  }}));
+}
+
+function renderBreak() {
+  var idx = route.blockIndex;
+  var core = state.settings.coreBlocks;
+  var done = coreDoneCount();
+
+  mainEl.appendChild(el("div", {style:"font-size:20px;font-weight:600;margin-bottom:2px;", text:"BLOCK COMPLETE ✓"}));
+  mainEl.appendChild(el("div", {style:"font-size:15px;color:var(--grey);margin-bottom:26px;", text:"Take a break."}));
+
+  mainEl.appendChild(el("div", {class:"target-label", text:"BREAK"}));
+  var choices = el("div", {class:"break-choices"});
+  [15,20,30].forEach(function(min){
+    var isDefault = min === state.settings.breakDefault;
+    choices.appendChild(el("button", {class:"btn"+(isDefault?"":" secondary"), text:min+" min", onclick:function(){
+      startBreakTimer(min, idx);
+    }}));
+  });
+  mainEl.appendChild(choices);
+
+  mainEl.appendChild(el("button", {class:"btn ghost", text:"Skip break", onclick:function(){
+    goToNext(idx);
+  }}));
+
+  if (done >= core) {
+    var summary = el("div", {style:"margin-top:30px;padding-top:16px;border-top:1px solid var(--grey-light);"});
+    summary.appendChild(el("div", {style:"font-size:17px;font-weight:600;margin-bottom:8px;", text: core+" / "+core+" COMPLETE ✓"}));
+    var totalMin = state.today.blocks.slice(0,core).reduce(function(s,b){return s+(b.durationMin||0);},0);
+    summary.appendChild(el("div", {class:"mono", style:"font-size:13px;color:var(--grey);", text:"Total focused study: "+totalMin+" minutes"}));
+    mainEl.appendChild(summary);
+  }
+}
+
+var breakTimeout = null;
+function startBreakTimer(min, idx) {
+  mainEl.innerHTML = "";
+  var wrap = el("div", {class:"timer-screen"});
+  wrap.appendChild(el("div", {class:"timer-state", text:"BREAK"}));
+  var numEl = el("div", {class:"timer-num mono"});
+  wrap.appendChild(numEl);
+  wrap.appendChild(el("button", {class:"btn secondary", text:"End break now", style:"margin-top:30px;", onclick:function(){
+    clearInterval(breakInterval);
+    goToNext(idx);
+  }}));
+  mainEl.appendChild(wrap);
+
+  var endAt = Date.now() + min*60*1000;
+  function tick(){
+    var rem = Math.max(0, endAt - Date.now());
+    numEl.textContent = fmtClock(rem/1000);
+    if (rem<=0) { clearInterval(breakInterval); goToNext(idx); }
+  }
+  tick();
+  var breakInterval = setInterval(tick, 1000);
+}
+
+function goToNext(completedIdx) {
+  var core = state.settings.coreBlocks;
+  var nextIdx = completedIdx + 1;
+  if (nextIdx < core) {
+    draftTarget = "";
+    draftSubject = state.subjects[nextIdx];
+    state.ritualChecked = [];
+    route = { screen: "setup", blockIndex: nextIdx };
+    render();
+    mainEl.insertBefore(el("div", {class:"screen-title", style:"font-size:13px;color:var(--grey);margin-bottom:2px;", text:"NEXT"}), mainEl.firstChild);
+  } else {
+    nav("today");
+  }
+}
+
+/* ============================================================
+   HISTORY
+   ============================================================ */
+function renderHistory() {
+  mainEl.appendChild(el("h1", {text:"HISTORY"}));
+  mainEl.appendChild(el("div", {style:"height:10px;"}));
+
+  if (state.streak > 0) {
+    mainEl.appendChild(el("div", {class:"streak-line", text:"CURRENT STREAK: "+state.streak+" DAY"+(state.streak===1?"":"S")}));
+  }
+
+  if (state.history.length === 0) {
+    mainEl.appendChild(el("div", {class:"empty-state", text:"No completed days yet."}));
+    return;
+  }
+
+  var list = el("div");
+  state.history.forEach(function(h){
+    var entry = el("div", {class:"hist-entry"});
+    entry.appendChild(el("div", {class:"hist-date", text: fmtDateHuman(h.date)}));
+    entry.appendChild(el("div", {class:"hist-stats", text: h.coreDone+" / "+state.settings.coreBlocks+" blocks · "+h.totalMinutes+" focused minutes"}));
+    list.appendChild(entry);
+  });
+  mainEl.appendChild(list);
+}
+
+/* ============================================================
+   SETTINGS
+   ============================================================ */
+function renderSettings() {
+  mainEl.appendChild(el("h1", {text:"SETTINGS"}));
+  mainEl.appendChild(el("div", {style:"height:6px;"}));
+
+  // Theme
+  var themeRow = el("div", {class:"setting-row"});
+  themeRow.appendChild(el("div", {class:"setting-label", text:"Theme"}));
+  var themeSelect = el("select");
+  ["light"].forEach(function(v){
+    var opt = el("option", {value:v, text: v==="light"?"Light":"Dark"});
+    themeSelect.appendChild(opt);
+  });
+  themeSelect.value = "light";
+  themeSelect.disabled = true;
+  themeRow.appendChild(themeSelect);
+  mainEl.appendChild(themeRow);
+
+  // Block duration
+  mainEl.appendChild(stepperRow("Block duration", state.settings.blockDuration+" min", function(delta){
+    state.settings.blockDuration = Math.max(10, Math.min(180, state.settings.blockDuration+delta));
+    saveState(); render();
+  }));
+
+  // Default break
+  mainEl.appendChild(stepperRow("Default break", state.settings.breakDefault+" min", function(delta){
+    state.settings.breakDefault = Math.max(5, Math.min(60, state.settings.breakDefault+delta));
+    saveState(); render();
+  }, 5));
+
+  // Core blocks count
+  mainEl.appendChild(stepperRow("Core blocks", String(state.settings.coreBlocks), function(delta){
+    state.settings.coreBlocks = Math.max(1, Math.min(7, state.settings.coreBlocks+delta));
+    saveState(); render();
+  }));
+
+  // Block 8 toggle
+  var b8Row = el("div", {class:"setting-row"});
+  b8Row.appendChild(el("div", {class:"setting-label", text:"Allow optional Block 8"}));
+  var toggleBtn = el("button", {class:"btn"+(state.settings.allowBlock8?"":" secondary"), style:"width:auto;padding:8px 16px;margin:0;font-size:13px;", text: state.settings.allowBlock8?"On":"Off", onclick:function(){
+    state.settings.allowBlock8 = !state.settings.allowBlock8;
+    saveState(); render();
+  }});
+  b8Row.appendChild(toggleBtn);
+  mainEl.appendChild(b8Row);
+
+  // Rename subjects
+  mainEl.appendChild(el("div", {style:"margin-top:26px;font-size:13px;color:var(--grey);margin-bottom:8px;", text:"BLOCK SUBJECTS"}));
+  state.subjects.forEach(function(s, i){
+    mainEl.appendChild(el("label", {text:"Block "+(i+1)}));
+    var input = el("input", {type:"text"});
+    input.value = s;
+    input.addEventListener("change", function(e){
+      state.subjects[i] = e.target.value.trim() || DEFAULT_SUBJECTS[i];
+      saveState();
+    });
+    mainEl.appendChild(input);
+  });
+
+  // Reset data
+  mainEl.appendChild(el("div", {style:"margin-top:30px;"}));
+  mainEl.appendChild(el("button", {class:"btn danger", text:"Reset all data", onclick:function(){
+    if (confirm("This will permanently delete all history, streaks, and today's progress. Continue?")) {
+      if (confirm("Are you absolutely sure? This cannot be undone.")) {
+        localStorage.removeItem(LS_KEY);
+        state = defaultState();
+        state.onboarded = true;
+        saveState();
+        nav("today");
+      }
+    }
+  }}));
+
+  // About
+  mainEl.appendChild(el("div", {style:"margin-top:30px;padding-top:16px;border-top:1px solid var(--grey-light);font-size:12px;color:var(--grey);line-height:1.6;"}, [
+    el("div", {text:"7×90 Study Blocks"}),
+    el("div", {text:"Offline. No account. No tracking. All data stays on this device."})
+  ]));
+}
+
+function stepperRow(label, valueText, onDelta, step) {
+  step = step || 5;
+  var row = el("div", {class:"setting-row"});
+  row.appendChild(el("div", {class:"setting-label", text:label}));
+  var stepper = el("div", {class:"stepper"});
+  stepper.appendChild(el("button", {text:"–", onclick:function(){ onDelta(-step); }}));
+  stepper.appendChild(el("span", {class:"val mono", text:valueText}));
+  stepper.appendChild(el("button", {text:"+", onclick:function(){ onDelta(step); }}));
+  row.appendChild(stepper);
+  return row;
+}
+
+/* ============================================================
+   TAB WIRING
+   ============================================================ */
+Array.from(tabsEl.children).forEach(function(btn){
+  btn.addEventListener("click", function(){
+    setTab(btn.getAttribute("data-tab"));
+  });
+});
+
+/* ============================================================
+   INIT
+   ============================================================ */
+rolloverIfNeeded();
+render();
+
+// safety: persist on unload too, in case a save was missed
+window.addEventListener("pagehide", saveState);
+window.addEventListener("beforeunload", saveState);
+
+})();
+</script>
+</body>
+</html>
