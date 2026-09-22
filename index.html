@@ -1175,6 +1175,11 @@ window.addEventListener("pagehide", saveState);
 window.addEventListener("beforeunload", saveState);
 
 })();
+  if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('./sw.js');
+  });
+  }
 </script>
 </body>
 </html>
