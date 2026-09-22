@@ -88,7 +88,7 @@ function renderToday(app){
  if(d.breakEnd){renderBreak(app);return}
  let html='<section class="card"><div class="row"><div><div class="muted">TODAY</div><h2>'+n+' / 7 CORE BLOCKS</h2></div><strong>'+pct+'%</strong></div><div class="progress"><i style="width:'+pct+'%"></i></div><div class="muted">Goal: seven focused 90-minute blocks. Block 8 is bonus.</div></section>';
  if(n===7){
-  html+='<section class="card center"><h2 class="success">7 / 7 COMPLETE ✓</h2><div class="spacer"></div><p>Today's study</p><p><b>630 focused minutes</b></p><div class="spacer"></div><button class="secondary" id="start8">START OPTIONAL BLOCK 8</button></section>';
+  html+='<section class="card center"><h2 class="success">7 / 7 COMPLETE ✓</h2><div class="spacer"></div><p>Today’s study</p><p><b>630 focused minutes</b></p><div class="spacer"></div><button class="secondary" id="start8">START OPTIONAL BLOCK 8</button></section>';
  } else {
   html+='<section class="card"><div class="muted">CUE</div><h2>Start Ritual</h2><div class="checklist stack" style="margin-top:10px">'+ritual.map((x,i)=>'<label><input type="checkbox" data-rit="'+i+'"> '+x+'</label>').join("")+'</div></section>';
  }
